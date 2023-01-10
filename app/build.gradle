@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-android-extensions'
+}
+
+android {
+    compileSdk AndroidSdk.compile
+
+    defaultConfig {
+        applicationId AndroidClient.appId
+        minSdk AndroidSdk.min
+        targetSdk AndroidSdk.target
+        versionCode AndroidClient.versionCode
+        versionName AndroidClient.versionName
+        testInstrumentationRunner AndroidClient.testRunner
+
+    }
+
+    buildTypes {
+
+        debug {
+
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "GITHUB_CLIENT_ID", project.properties["GITHUB_CLIENT_ID"] ?: "\"NOT_FOUND\""
+            buildConfigField "String", "GITHUB_CLIENT_SECRET", project.properties["GITHUB_CLIENT_SECRET"] ?: "\"NOT_FOUND\""
+        }
+
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "GITHUB_CLIENT_ID", project.properties["GITHUB_CLIENT_ID"] ?: "\"NOT_FOUND\""
+            buildConfigField "String", "GITHUB_CLIENT_SECRET", project.properties["GITHUB_CLIENT_SECRET"] ?: "\"NOT_FOUND\""
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    buildFeatures {
+        // 뷰 바인딩 활성화
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation(Libraries.ktxCore)
+    implementation(Libraries.appCompat)
+    implementation(Libraries.material)
+    implementation(Libraries.recyclerView)
+    implementation(Libraries.glide)
+    implementation(Libraries.okHttpLoggingInterceptor)
+    implementation(Libraries.retrofit)
+    implementation(Libraries.browser)
+
+    testImplementation(TestLibraries.junit4)
+    androidTestImplementation(TestLibraries.testExtJunit)
+    androidTestImplementation(TestLibraries.espressoCore)
+}
