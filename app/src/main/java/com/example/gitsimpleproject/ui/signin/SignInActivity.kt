@@ -10,7 +10,6 @@ import androidx.browser.customtabs.CustomTabsIntent
 import com.example.gitsimpleproject.BuildConfig
 import com.example.gitsimpleproject.R
 import com.example.gitsimpleproject.api.AuthApi
-import com.example.gitsimpleproject.api.GithubApiProvider
 import com.example.gitsimpleproject.api.model.GithubAccessToken
 import com.example.gitsimpleproject.data.AuthTokenProvider
 import com.example.gitsimpleproject.databinding.ActivitySigninBinding
@@ -18,29 +17,33 @@ import com.example.gitsimpleproject.ui.main.MainActivity
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-
+import com.example.gitsimpleproject.api.provideAuthApi
 
 class SignInActivity : AppCompatActivity(), View.OnClickListener {
 
-    private lateinit var binding: ActivitySigninBinding
 
-    private var api: AuthApi? = null
-    lateinit var authTokenProvider: AuthTokenProvider
-    var accessTokenCall: Call<GithubAccessToken>? = null
+    private val binding: ActivitySigninBinding by lazy {
+        ActivitySigninBinding.inflate(layoutInflater)
+    }
+    internal val api: AuthApi by lazy { provideAuthApi() }
+    internal val authTokenProvider: AuthTokenProvider by lazy { AuthTokenProvider(this) }
+    internal var accessTokenCall : Call<GithubAccessToken>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        binding = ActivitySigninBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         binding.btnStart.setOnClickListener(this)
-
-        api = GithubApiProvider.provideAuthApi()
-        authTokenProvider = AuthTokenProvider(this)
 
     }
 
+    override fun onStop() {
+        super.onStop()
+        // 액티비티가 화면에서 사라지는 시점에 API 호출 객체가 생성되어 있다면
+        // API 요청을 취소한다.
+        accessTokenCall?.run {
+            cancel()
+        }
+    }
     override fun onClick(p0: View?) {
         when (p0?.id) {
             R.id.btnSubmit -> {
@@ -76,11 +79,14 @@ class SignInActivity : AppCompatActivity(), View.OnClickListener {
 
     private fun getAccessToken(code: String) {
         showProgress()
-        accessTokenCall = api!!.getAccessToken(
+        accessTokenCall = api.getAccessToken(
             BuildConfig.GITHUB_CLIENT_ID,
-            BuildConfig.GITHUB_CLIENT_SECRET,
-            code
+            BuildConfig.GITHUB_CLIENT_SECRET, code
         )
+
+        // 앞에서 API 호출에 필요한 객체를 받았으므로,
+        // 이 시점에서 accessTokenCall 객체의 값은 널이 아닙니다.
+        // 따라서 비 널 값 보증(!!)을 사용하여 이 객체를 사용합니다.
         accessTokenCall!!.enqueue(object : Callback<GithubAccessToken?> {
             override fun onResponse(
                 call: Call<GithubAccessToken?>,

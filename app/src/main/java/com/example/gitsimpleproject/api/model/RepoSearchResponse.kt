@@ -2,10 +2,8 @@ package com.example.gitsimpleproject.api.model
 
 import com.google.gson.annotations.SerializedName
 
-class RepoSearchResponse {
+class RepoSearchResponse(
     @SerializedName("total_count")
-    val totalCount = 0
-
-    val items: MutableList<GithubRepo>? = null
-
-}
+    val totalCount: Int,
+    val items: List<GithubRepo>
+)

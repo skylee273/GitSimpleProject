@@ -6,11 +6,7 @@ import androidx.annotation.NonNull
 import androidx.annotation.Nullable
 
 
-class AuthTokenProvider(applicationContext: Context?) {
-
-    private val KEY_AUTH_TOKEN = "auth_token"
-
-    private var context: Context? = null
+class AuthTokenProvider(private val context: Context?) {
 
     fun updateToken(@NonNull token: String?) {
         PreferenceManager.getDefaultSharedPreferences(context).edit()
@@ -24,7 +20,7 @@ class AuthTokenProvider(applicationContext: Context?) {
             .getString(KEY_AUTH_TOKEN, null)
     }
 
-    init {
-        this.context = context
+    companion object {
+        private const val KEY_AUTH_TOKEN = "auth_token"
     }
 }

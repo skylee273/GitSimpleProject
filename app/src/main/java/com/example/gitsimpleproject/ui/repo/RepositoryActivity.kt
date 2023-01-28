@@ -6,9 +6,8 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.gitsimpleproject.R
-import com.example.gitsimpleproject.api.GithubApi
-import com.example.gitsimpleproject.api.GithubApiProvider
 import com.example.gitsimpleproject.api.model.GithubRepo
+import com.example.gitsimpleproject.api.provideGithubApi
 import com.example.gitsimpleproject.databinding.ActivityRepositoryBinding
 import retrofit2.Call
 import retrofit2.Callback
@@ -20,24 +19,25 @@ import java.util.*
 
 class RepositoryActivity : AppCompatActivity() {
 
-    private lateinit var binding : ActivityRepositoryBinding
-    var api: GithubApi? = null
+    companion object {
+        const val KEY_USER_LOGIN = "user_login"
+        const val KEY_REPO_NAME = "repo_name"
+    }
 
-    var repoCall: Call<GithubRepo>? = null
-    val KEY_USER_LOGIN = "user_login"
-    val KEY_REPO_NAME = "repo_name"
-    var dateFormatInResponse: SimpleDateFormat = SimpleDateFormat(
+    private lateinit var binding : ActivityRepositoryBinding
+    internal val api by lazy { provideGithubApi(this) }
+    internal var repoCall: Call<GithubRepo>? = null
+
+    internal val dateFormatInResponse: SimpleDateFormat = SimpleDateFormat(
         "yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()
     )
-    var dateFormatToShow: SimpleDateFormat = SimpleDateFormat(
+    internal val dateFormatToShow: SimpleDateFormat = SimpleDateFormat(
         "yyyy-MM-dd HH:mm:ss", Locale.getDefault()
     )
     override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
         super.onCreate(savedInstanceState, persistentState)
         binding = ActivityRepositoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        api = GithubApiProvider.provideGithubApi(this)
 
         val login = intent.getStringExtra(KEY_USER_LOGIN)
             ?: throw IllegalArgumentException("No login info exists in extras")
@@ -50,14 +50,14 @@ class RepositoryActivity : AppCompatActivity() {
 
     private fun showRepositoryInfo(login: String, repoName: String) {
         showProgress()
-        repoCall = api!!.getRepository(login, repoName)
+        repoCall = api.getRepository(login, repoName)
         repoCall!!.enqueue(object : Callback<GithubRepo?> {
             override fun onResponse(call: Call<GithubRepo?>, response: Response<GithubRepo?>) {
                 hideProgress(true)
                 val repo: GithubRepo? = response.body()
                 if (response.isSuccessful && null != repo) {
                     Glide.with(this@RepositoryActivity)
-                        .load(repo.owner!!.avatarUrl)
+                        .load(repo.owner.avatarUrl)
                         .into(binding.ivActivityRepositoryProfile)
                     binding.tvActivityRepositoryName.text = repo.fullName
                     binding.tvActivityRepositoryStars.text = resources
@@ -97,7 +97,9 @@ class RepositoryActivity : AppCompatActivity() {
     }
 
     private fun showError(message: String?) {
-        binding.tvActivityRepositoryMessage.text = message
-        binding.tvActivityRepositoryMessage.visibility = View.VISIBLE
+        with(binding.tvActivityRepositoryMessage){
+            text = message ?: "Unexpected error"
+            visibility = View.VISIBLE
+        }
     }
 }

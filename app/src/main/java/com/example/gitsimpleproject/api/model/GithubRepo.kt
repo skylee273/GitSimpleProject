@@ -2,22 +2,22 @@ package com.example.gitsimpleproject.api.model
 
 import com.google.gson.annotations.SerializedName
 
-class GithubRepo {
-    val name: String? = null
+class GithubRepo(
+    val name: String,
 
     @SerializedName("full_name")
-    val fullName: String? = null
+    val fullName: String,
 
-    var owner: GithubOwner? = null
+    var owner: GithubOwner,
 
-    val description: String? = null
+    val description: String? = null,
 
-    val language: String? = null
+    val language: String? = null,
 
     @SerializedName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String,
 
     @SerializedName("stargazers_count")
-    val stars = 0
+    val stars: Int
 
-}
+)
