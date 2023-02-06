@@ -2,11 +2,9 @@ package com.example.gitsimpleproject.api
 
 import androidx.annotation.NonNull
 import com.example.gitsimpleproject.api.model.GithubAccessToken
-import retrofit2.Call
-import retrofit2.http.Field
-import retrofit2.http.FormUrlEncoded
-import retrofit2.http.Headers
-import retrofit2.http.POST
+import io.reactivex.rxjava3.core.Single
+import retrofit2.http.*
+import java.util.*
 
 
 interface AuthApi {
@@ -17,5 +15,5 @@ interface AuthApi {
         @NonNull @Field("client_id") clientId: String?,
         @NonNull @Field("client_secret") clientSecret: String?,
         @NonNull @Field("code") code: String?
-    ): Call<GithubAccessToken>?
+    ): Single<GithubAccessToken>
 }

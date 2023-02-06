@@ -9,6 +9,7 @@ import com.example.gitsimpleproject.data.AuthTokenProvider
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import java.lang.IllegalStateException
 import java.io.IOException
 
@@ -17,6 +18,7 @@ import java.io.IOException
 fun provideAuthApi(): AuthApi = Retrofit.Builder()
     .baseUrl("https://github.com/")
     .client(provideOkHttpClient(provideLoggingInterceptor(), null))
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .addConverterFactory(GsonConverterFactory.create())
     .build()
     .create(AuthApi::class.java)
@@ -30,6 +32,7 @@ fun provideGithubApi(context: Context): GithubApi = Retrofit.Builder()
             provideAuthInterceptor(provideAuthTokenProvider(context))
         )
     )
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
     .addConverterFactory(GsonConverterFactory.create())
     .build()
     .create(GithubApi::class.java)

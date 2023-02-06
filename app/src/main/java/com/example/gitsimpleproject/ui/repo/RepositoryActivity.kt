@@ -1,32 +1,30 @@
 package com.example.gitsimpleproject.ui.repo
 
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.gitsimpleproject.R
-import com.example.gitsimpleproject.api.model.GithubRepo
 import com.example.gitsimpleproject.api.provideGithubApi
+import com.example.gitsimpleproject.base.BaseActivity
 import com.example.gitsimpleproject.databinding.ActivityRepositoryBinding
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.gitsimpleproject.extensions.plusAssign
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.schedulers.Schedulers
 
 
-class RepositoryActivity : AppCompatActivity() {
+class RepositoryActivity : BaseActivity<ActivityRepositoryBinding>(R.layout.activity_repository) {
 
     companion object {
         const val KEY_USER_LOGIN = "user_login"
         const val KEY_REPO_NAME = "repo_name"
     }
 
-    private lateinit var binding : ActivityRepositoryBinding
     internal val api by lazy { provideGithubApi(this) }
-    internal var repoCall: Call<GithubRepo>? = null
+
+    // internal var repoCall: Call<GithubRepo>? = null
 
     internal val dateFormatInResponse: SimpleDateFormat = SimpleDateFormat(
         "yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()
@@ -34,10 +32,9 @@ class RepositoryActivity : AppCompatActivity() {
     internal val dateFormatToShow: SimpleDateFormat = SimpleDateFormat(
         "yyyy-MM-dd HH:mm:ss", Locale.getDefault()
     )
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
-        binding = ActivityRepositoryBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         val login = intent.getStringExtra(KEY_USER_LOGIN)
             ?: throw IllegalArgumentException("No login info exists in extras")
@@ -49,41 +46,37 @@ class RepositoryActivity : AppCompatActivity() {
 
 
     private fun showRepositoryInfo(login: String, repoName: String) {
-        showProgress()
-        repoCall = api.getRepository(login, repoName)
-        repoCall!!.enqueue(object : Callback<GithubRepo?> {
-            override fun onResponse(call: Call<GithubRepo?>, response: Response<GithubRepo?>) {
-                hideProgress(true)
-                val repo: GithubRepo? = response.body()
-                if (response.isSuccessful && null != repo) {
-                    Glide.with(this@RepositoryActivity)
-                        .load(repo.owner.avatarUrl)
-                        .into(binding.ivActivityRepositoryProfile)
-                    binding.tvActivityRepositoryName.text = repo.fullName
-                    binding.tvActivityRepositoryStars.text = resources
-                        .getQuantityString(R.plurals.star, repo.stars, repo.stars)
+        compositeDisposable += api.getRepository(login, repoName)
+            .subscribeOn(Schedulers.newThread())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe { showProgress() }
+            .doOnError { hideProgress(false) }
+            .doAfterTerminate { hideProgress(true) }
+            .subscribe({ repo ->
+                // API를 통해 저장소 정보를 정상적으로 받았을 때 처리할 작업을 구현합니다.
+                // 작업중 오류가 발생하면 이 블록을 호출하지 않는다.
+                Glide.with(this@RepositoryActivity)
+                    .load(repo.owner.avatarUrl)
+                    .into(binding.ivActivityRepositoryProfile)
+                binding.tvActivityRepositoryName.text = repo.fullName
+                binding.tvActivityRepositoryStars.text = resources
+                    .getQuantityString(R.plurals.star, repo.stars, repo.stars)
+                binding.tvActivityRepositoryDescription.text =
+                    repo.description ?: getString(R.string.no_description_provided)
+                binding.tvActivityRepositoryLanguage.text =
+                    repo.language ?: getString(R.string.no_language_specified)
 
-                    binding.tvActivityRepositoryDescription.text = repo.description ?: getString(R.string.no_description_provided)
-                    binding.tvActivityRepositoryLanguage.text = repo.language ?: getString(R.string.no_language_specified)
-
-                    try {
-                        val lastUpdate: Date = dateFormatInResponse.parse(repo.updatedAt!!)!!
-                        binding.tvActivityRepositoryLastUpdate.text = dateFormatToShow.format(lastUpdate)
-                    } catch (e: ParseException) {
-                        binding.tvActivityRepositoryLastUpdate.text = getString(R.string.unknown)
-                    }
-                } else {
-                    showError("Not successful: " + response.message())
+                try {
+                    val lastUpdate: Date = dateFormatInResponse.parse(repo.updatedAt)!!
+                    binding.tvActivityRepositoryLastUpdate.text =
+                        dateFormatToShow.format(lastUpdate)
+                } catch (e: ParseException) {
+                    binding.tvActivityRepositoryLastUpdate.text = getString(R.string.unknown)
                 }
+
+            }) {
+                showError(it.message)
             }
-
-            override fun onFailure(call: Call<GithubRepo?>, t: Throwable) {
-                hideProgress(false)
-                showError(t.message)
-            }
-
-
-        })
     }
 
     private fun showProgress() {
@@ -97,7 +90,7 @@ class RepositoryActivity : AppCompatActivity() {
     }
 
     private fun showError(message: String?) {
-        with(binding.tvActivityRepositoryMessage){
+        with(binding.tvActivityRepositoryMessage) {
             text = message ?: "Unexpected error"
             visibility = View.VISIBLE
         }

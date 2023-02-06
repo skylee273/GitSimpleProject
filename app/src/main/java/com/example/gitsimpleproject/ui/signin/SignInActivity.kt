@@ -5,69 +5,31 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import com.example.gitsimpleproject.BuildConfig
 import com.example.gitsimpleproject.R
 import com.example.gitsimpleproject.api.AuthApi
-import com.example.gitsimpleproject.api.model.GithubAccessToken
 import com.example.gitsimpleproject.data.AuthTokenProvider
-import com.example.gitsimpleproject.databinding.ActivitySigninBinding
 import com.example.gitsimpleproject.ui.main.MainActivity
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import com.example.gitsimpleproject.api.provideAuthApi
+import com.example.gitsimpleproject.base.BaseActivity
+import com.example.gitsimpleproject.databinding.ActivitySigninBinding
+import com.example.gitsimpleproject.extensions.plusAssign
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.schedulers.Schedulers
 
-class SignInActivity : AppCompatActivity(), View.OnClickListener {
+class SignInActivity : BaseActivity<ActivitySigninBinding>(R.layout.activity_signin), View.OnClickListener {
 
-
-    private val binding: ActivitySigninBinding by lazy {
-        ActivitySigninBinding.inflate(layoutInflater)
-    }
     internal val api: AuthApi by lazy { provideAuthApi() }
-    internal val authTokenProvider: AuthTokenProvider by lazy { AuthTokenProvider(this) }
-    internal var accessTokenCall : Call<GithubAccessToken>? = null
+    private val authTokenProvider: AuthTokenProvider by lazy { AuthTokenProvider(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(binding.root)
         binding.btnStart.setOnClickListener(this)
 
     }
 
-    override fun onStop() {
-        super.onStop()
-        // 액티비티가 화면에서 사라지는 시점에 API 호출 객체가 생성되어 있다면
-        // API 요청을 취소한다.
-        accessTokenCall?.run {
-            cancel()
-        }
-    }
-    override fun onClick(p0: View?) {
-        when (p0?.id) {
-            R.id.btnSubmit -> {
-                // 사용자 인증을 처리하는 URL 구성
-                // 형식 : https://github.com/login/oauth/authorize?client_id={애플리케이션 Client ID}
-                val authUri = Uri.Builder().scheme("https")
-                    .authority("github.com")
-                    .appendPath("login")
-                    .appendPath("oauth")
-                    .appendPath("authorize")
-                    .appendQueryParameter("client_id", BuildConfig.GITHUB_CLIENT_ID)
-                    .build()
 
-                val intent = CustomTabsIntent.Builder().build()
-                intent.launchUrl(this, authUri)
-
-                // 저장된 엑세스 토큰이 있다면 메인 액티비티로 이동합니다.
-                if (null != authTokenProvider.getToken()) {
-                    launchMainActivity()
-                }
-
-            }
-        }
-    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -78,39 +40,30 @@ class SignInActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun getAccessToken(code: String) {
-        showProgress()
-        accessTokenCall = api.getAccessToken(
-            BuildConfig.GITHUB_CLIENT_ID,
-            BuildConfig.GITHUB_CLIENT_SECRET, code
-        )
 
-        // 앞에서 API 호출에 필요한 객체를 받았으므로,
-        // 이 시점에서 accessTokenCall 객체의 값은 널이 아닙니다.
-        // 따라서 비 널 값 보증(!!)을 사용하여 이 객체를 사용합니다.
-        accessTokenCall!!.enqueue(object : Callback<GithubAccessToken?> {
-            override fun onResponse(
-                call: Call<GithubAccessToken?>,
-                response: Response<GithubAccessToken?>
-            ) {
-                hideProgress()
-                val token = response.body()
-                if (response.isSuccessful && null != token) {
-                    authTokenProvider.updateToken(token.accessToken)
-                    launchMainActivity()
-                } else {
-                    showError(
-                        IllegalStateException(
-                            "Not successful: " + response.message()
-                        )
-                    )
-                }
+        //REST API를 통해 엑세스 토큰을 요청합니다.
+        compositeDisposable += api.getAccessToken("3e954a3ab814f9b253f9", "6cc7d4769582dd2b1bb53f56d5611345a5f508b2", code)
+            /**
+             * 이 이후에 수행되는 코드는 모두 메인 스레드에서 실행됩니다.
+             * RxAndroid에서 제공하는 스케즐러인
+             * AndroidSchedulers.mainThread()
+             */
+            .map { it.accessToken!!}
+            .subscribeOn(Schedulers.newThread())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe { showProgress() } // 구독할 때 수행할 작업을 구현한다.
+            .doOnTerminate { hideProgress() } // 스트림이 종료될 떄 수행할 작업을 구현한다.
+            .subscribe({ token ->
+                // API를 통해 액세스 토큰을 정상적으로 받았을 때 처리할 작업을 구현한다.
+                // 작업중 오류가 발생하면 이 블록은 호출하지 않는다.
+                authTokenProvider.updateToken(token)
+                launchMainActivity()
+            }) {
+                // 에러 블록
+                // 네트워크 오류나 데이터 처리 오류 등
+                // 작업이 정상적으로 완료되지 않았을 때 호출됩니다.
+                showError(it)
             }
-
-            override fun onFailure(call: Call<GithubAccessToken?>, t: Throwable) {
-                hideProgress()
-                showError(t)
-            }
-        })
     }
 
     private fun showProgress() {
@@ -135,5 +88,29 @@ class SignInActivity : AppCompatActivity(), View.OnClickListener {
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
+    }
+
+    override fun onClick(p0: View?) {
+        when (p0!!.id) {
+            R.id.btn_start -> {
+                // 사용자 인증을 처리하는 URL 구성
+                // 형식 : https://github.com/login/oauth/authorize?client_id={애플리케이션 Client ID}
+                val authUri = Uri.Builder().scheme("https")
+                    .authority("github.com")
+                    .appendPath("login")
+                    .appendPath("oauth")
+                    .appendPath("authorize")
+                    .appendQueryParameter("client_id", "3e954a3ab814f9b253f9")
+                    .build()
+
+                val intent = CustomTabsIntent.Builder().build()
+                intent.launchUrl(this, authUri)
+
+                // 저장된 엑세스 토큰이 있다면 메인 액티비티로 이동합니다.
+                if (null != authTokenProvider.getToken()) {
+                    launchMainActivity()
+                }
+            }
+        }
     }
 }

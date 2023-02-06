@@ -44,7 +44,12 @@ android {
     buildFeatures {
         // 뷰 바인딩 활성화
         viewBinding true
+
     }
+    dataBinding {
+        enabled = true
+    }
+
 }
 
 dependencies {
@@ -55,6 +60,17 @@ dependencies {
     implementation(Libraries.glide)
     implementation(Libraries.okHttpLoggingInterceptor)
     implementation(Libraries.retrofit)
+    implementation(Libraries.retrofitAdapter)
+    implementation(Libraries.lifecycleCompiler)
+    implementation(Libraries.lifecycleExtensions)
+    implementation 'com.google.guava:guava:27.0.1-android'
+
+    //rxjava
+    implementation 'com.jakewharton.rxbinding4:rxbinding:4.0.0'
+    implementation 'io.reactivex.rxjava3:rxandroid:3.0.2'
+    implementation 'io.reactivex.rxjava3:rxjava:3.1.5'
+    implementation 'com.squareup.retrofit2:adapter-rxjava3:2.9.0'
+    implementation "io.reactivex.rxjava3:rxkotlin:3.0.0"
     implementation(Libraries.browser)
 
     testImplementation(TestLibraries.junit4)

@@ -75,6 +75,7 @@ object Libraries {
     const val glide                    = "com.github.bumptech.glide:glide:${Versions.glide}"
     const val dagger                   = "com.google.dagger:dagger:${Versions.dagger}"
     const val retrofit                 = "com.squareup.retrofit2:converter-gson:${Versions.retrofit}"
+    const val retrofitAdapter          = "com.squareup.retrofit2:adapter-rxjava3:${Versions.retrofit}"
     const val okHttpLoggingInterceptor = "com.squareup.okhttp3:logging-interceptor:${Versions.okHttpLoggingInterceptor}"
     const val browser                  = "androidx.browser:browser:${Versions.browser}"
     //TODO: Legacy -> WIP -> Migrate to Koin or Hilt?
