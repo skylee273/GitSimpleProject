@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
-import com.example.gitsimpleproject.BuildConfig
 import com.example.gitsimpleproject.R
 import com.example.gitsimpleproject.api.AuthApi
 import com.example.gitsimpleproject.data.AuthTokenProvider
@@ -26,10 +25,7 @@ class SignInActivity : BaseActivity<ActivitySigninBinding>(R.layout.activity_sig
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding.btnStart.setOnClickListener(this)
-
     }
-
-
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

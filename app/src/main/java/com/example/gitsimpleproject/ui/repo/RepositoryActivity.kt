@@ -26,10 +26,10 @@ class RepositoryActivity : BaseActivity<ActivityRepositoryBinding>(R.layout.acti
 
     // internal var repoCall: Call<GithubRepo>? = null
 
-    internal val dateFormatInResponse: SimpleDateFormat = SimpleDateFormat(
+    private val dateFormatInResponse: SimpleDateFormat = SimpleDateFormat(
         "yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()
     )
-    internal val dateFormatToShow: SimpleDateFormat = SimpleDateFormat(
+    private val dateFormatToShow: SimpleDateFormat = SimpleDateFormat(
         "yyyy-MM-dd HH:mm:ss", Locale.getDefault()
     )
 
