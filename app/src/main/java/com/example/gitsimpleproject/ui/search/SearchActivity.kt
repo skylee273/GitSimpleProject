@@ -16,6 +16,7 @@ import com.example.gitsimpleproject.base.BaseActivity
 import com.example.gitsimpleproject.databinding.ActivitySearchBinding
 import com.example.gitsimpleproject.ui.repo.RepositoryActivity
 import com.example.gitsimpleproject.extensions.plusAssign
+import com.example.gitsimpleproject.rx.AutoClearedDisposable
 import com.jakewharton.rxbinding4.widget.queryTextChangeEvents
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Single
@@ -26,6 +27,7 @@ import java.lang.IllegalStateException
 class SearchActivity : BaseActivity<ActivitySearchBinding>(R.layout.activity_search), SearchAdapter.ItemClickListener {
     private lateinit var menuSearch: MenuItem
     private lateinit var searchView: SearchView
+
 
     private val adapter by lazy {
         // apply() 함수를 사용하여 객체 생성과 함수 호출을 한번에 수행한다.
@@ -39,8 +41,19 @@ class SearchActivity : BaseActivity<ActivitySearchBinding>(R.layout.activity_sea
         provideGithubApi(this)
     }
 
+    internal val disposables = AutoClearedDisposable(this)
+
+    internal val viewDisposables
+            = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lifecycle += disposables
+        lifecycle += viewDisposables
+
+
         with(binding.rvActivitySearchList) {
             layoutManager = LinearLayoutManager(this@SearchActivity)
             adapter = this@SearchActivity.adapter
@@ -52,7 +65,7 @@ class SearchActivity : BaseActivity<ActivitySearchBinding>(R.layout.activity_sea
         menuSearch = menu!!.findItem(R.id.menu_activity_search_query)
 
         searchView = (menuSearch.actionView as SearchView)
-        searchView.queryTextChangeEvents()
+        viewDisposables += searchView.queryTextChangeEvents()
             .filter { it.isSubmitted }
             .map { it.queryText }
             .map { it.toString() }
@@ -95,7 +108,7 @@ class SearchActivity : BaseActivity<ActivitySearchBinding>(R.layout.activity_sea
 
     @SuppressLint("NotifyDataSetChanged")
     private fun searchRepository(query: String) {
-        compositeDisposable += api.searchRepository(query)
+        disposables += api.searchRepository(query)
             .flatMap {
                 if (0 == it.totalCount) {
                     Single.error(IllegalStateException("No search result"))

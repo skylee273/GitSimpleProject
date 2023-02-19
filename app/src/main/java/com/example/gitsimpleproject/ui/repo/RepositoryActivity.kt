@@ -11,6 +11,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.gitsimpleproject.extensions.plusAssign
+import com.example.gitsimpleproject.rx.AutoClearedDisposable
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.schedulers.Schedulers
 
@@ -24,6 +25,8 @@ class RepositoryActivity : BaseActivity<ActivityRepositoryBinding>(R.layout.acti
 
     internal val api by lazy { provideGithubApi(this) }
 
+    internal val disposables = AutoClearedDisposable(this)
+
     // internal var repoCall: Call<GithubRepo>? = null
 
     private val dateFormatInResponse: SimpleDateFormat = SimpleDateFormat(
@@ -36,6 +39,8 @@ class RepositoryActivity : BaseActivity<ActivityRepositoryBinding>(R.layout.acti
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        lifecycle += disposables
+
         val login = intent.getStringExtra(KEY_USER_LOGIN)
             ?: throw IllegalArgumentException("No login info exists in extras")
         val repo = intent.getStringExtra(KEY_REPO_NAME)
@@ -46,7 +51,7 @@ class RepositoryActivity : BaseActivity<ActivityRepositoryBinding>(R.layout.acti
 
 
     private fun showRepositoryInfo(login: String, repoName: String) {
-        compositeDisposable += api.getRepository(login, repoName)
+        disposables += api.getRepository(login, repoName)
             .subscribeOn(Schedulers.newThread())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe { showProgress() }

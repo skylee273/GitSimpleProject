@@ -13,7 +13,7 @@ abstract class BaseActivity<B: ViewDataBinding>(
 ) : AppCompatActivity() {
 
     lateinit var binding: B
-    val compositeDisposable = CompositeDisposable()
+    //val compositeDisposable = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,7 +23,7 @@ abstract class BaseActivity<B: ViewDataBinding>(
 
     override fun onStop() {
         super.onStop()
-        compositeDisposable.clear()
+       // compositeDisposable.clear()
     }
 
 }

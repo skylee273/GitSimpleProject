@@ -14,17 +14,23 @@ import com.example.gitsimpleproject.api.provideAuthApi
 import com.example.gitsimpleproject.base.BaseActivity
 import com.example.gitsimpleproject.databinding.ActivitySigninBinding
 import com.example.gitsimpleproject.extensions.plusAssign
+import com.example.gitsimpleproject.rx.AutoClearedDisposable
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.schedulers.Schedulers
 
 class SignInActivity : BaseActivity<ActivitySigninBinding>(R.layout.activity_signin), View.OnClickListener {
 
     internal val api: AuthApi by lazy { provideAuthApi() }
+    private val disposable = AutoClearedDisposable(this)
     private val authTokenProvider: AuthTokenProvider by lazy { AuthTokenProvider(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding.btnStart.setOnClickListener(this)
+
+        // Lifecycle.addObserver() 함수를 사용하여
+        // AutoClearedDisposable 객체를 옵서버로 등록
+        lifecycle += disposable
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -38,7 +44,7 @@ class SignInActivity : BaseActivity<ActivitySigninBinding>(R.layout.activity_sig
     private fun getAccessToken(code: String) {
 
         //REST API를 통해 엑세스 토큰을 요청합니다.
-        compositeDisposable += api.getAccessToken("3e954a3ab814f9b253f9", "6cc7d4769582dd2b1bb53f56d5611345a5f508b2", code)
+        disposable += api.getAccessToken("3e954a3ab814f9b253f9", "6cc7d4769582dd2b1bb53f56d5611345a5f508b2", code)
             /**
              * 이 이후에 수행되는 코드는 모두 메인 스레드에서 실행됩니다.
              * RxAndroid에서 제공하는 스케즐러인
